@@ -10,30 +10,33 @@ class Game {
     this.name = "Polygon";
     this.playGroundSize = parseInt(this.domElements.chooser.value, 10);
     this.debounce = false;
-    this.cardToCompare = "";
+    this.cardToCompare = null;
     this.opened = 0;
     this.score = 0;
     this.seconds = 0;
     this.minutes = 0;
     this.timerId = null;
     this.scoresForWin = 2;
-    this.cards = null;
     this.matched = 0;
     this.timerTime = 1000;
   }
 
   // Start
-
   start() {
     this.resetView();
     this.resetTotalCount();
     this.resetValues();
-
     this.generatePlayground();
 
+    // Listener
     this.domElements.chooser.addEventListener(
       "change",
       this.onSizeChange.bind(this),
+      false
+    );
+    this.domElements.playground.addEventListener(
+      "click",
+      this.onCardClick.bind(this),
       false
     );
   }
@@ -46,13 +49,13 @@ class Game {
       this.stopTimer();
     }
 
-    this.cardsFront.map((item) => {
-      this.cards += this.renderCard(item);
+    this.cardsFront.forEach((item) => {
+      this.renderCard(item);
     });
 
     this.renderScores();
     this.renderTimer();
-    this.renderPlaygroud();
+    this.renderPlayground();
   }
 
   startTimer() {
@@ -62,8 +65,6 @@ class Game {
         this.minutes++;
         this.seconds = 0;
       }
-
-      this.seconds = this.seconds < 9 ? "0" + this.seconds : this.seconds;
       this.renderTimer();
     }, this.timerTime);
   }
@@ -74,17 +75,14 @@ class Game {
   }
 
   // Logic
-
   rotate(card) {
     card.classList.toggle("turned");
   }
 
   onCardClick(e) {
-    if (!e) {
-      return false;
-    }
-    let target = e.target;
+    if (!e) return;
 
+    let target = e.target;
     while (target !== this.domElements.playground) {
       if (
         target.classList.contains("card") &&
@@ -110,8 +108,7 @@ class Game {
         } else {
           this.cardToCompare = target;
         }
-
-        return false;
+        return;
       }
       target = target.parentNode;
     }
@@ -119,59 +116,48 @@ class Game {
 
   cardIsEqual(...args) {
     this.score += this.scoresForWin;
-    args.map(() => {
-      this.matched += 1;
-    });
+    this.matched += args.length;
     this.resetValues();
     this.renderScores();
     if (this.detectEndOfGame()) {
-      this.stopTimer(this.timerId);
+      this.stopTimer();
       this.renderFinishPopUp();
     }
   }
 
   cardIsDifferent(...args) {
-    args.map((item) => this.rotate(item));
+    args.forEach((item) => this.rotate(item));
     this.resetValues();
   }
 
   // Render
-
   renderCard(name) {
     const card = `<figure class='card' id="img-${name}">
       <img src="./pics/${name}.jpg" class='side front'>
-   
-      
     </figure>`;
-
     this.domElements.playground.insertAdjacentHTML("beforeend", card);
-    this.domElements.playground.addEventListener(
-      "click",
-      this.onCardClick.bind(this),
-      false
-    );
   }
 
   renderTimer() {
-    this.domElements.timer.innerHTML = `${this.minutes}:${this.seconds}`;
+    const sec = this.seconds < 10 ? "0" + this.seconds : this.seconds;
+    this.domElements.timer.innerHTML = `${this.minutes}:${sec}`;
   }
 
   renderScores() {
     this.domElements.scores.innerHTML = this.score;
   }
 
-  renderPlaygroud() {
+  renderPlayground() {
     const cards = document.getElementsByClassName("card");
     this.domElements.playground.classList.remove("big-playground");
 
-    [...cards].map((item) => {
+    [...cards].forEach((item) => {
       if (this.playGroundSize === 4) {
         item.classList.add("card-for-4x4");
       } else if (this.playGroundSize === 6) {
         item.classList.add("card-for-6x6");
       } else {
-        item.classList.add("card-for-6x6");
-        item.classList.add("card-for-8x8");
+        item.classList.add("card-for-6x6", "card-for-8x8");
         this.domElements.playground.classList.add("big-playground");
       }
     });
@@ -180,19 +166,17 @@ class Game {
   renderFinishPopUp() {
     const popupTemplate = ` <section class="end-game-popup">
       <div class="game-popup">
-      <p class='final-text'>Well Done!</p>
-      <p class='final-text'>Score: <span>${this.score}</span></p>
-      <p class='final-text'>Time: <span>${this.minutes}:${this.seconds}</span></p>
-      <button class='new-game-btn'>Start New game</button>
+        <p class='final-text-title'>Well Done!</p>
+        <p class='final-text'>Score: <span class='result'>${this.score}</span></p>
+        <p class='final-text'>Time: <span class='result'>${this.minutes}:${this.seconds}</span></p>
+        <button class='new-game-btn'>Start New game</button>
       </div>
     </section>`;
-
     this.domElements.playground.insertAdjacentHTML("beforeend", popupTemplate);
     this.finishGame();
   }
 
   // Reset
-
   resetView() {
     this.domElements.playground.innerHTML = "";
   }
@@ -204,7 +188,7 @@ class Game {
   }
 
   resetValues() {
-    this.cardToCompare = "";
+    this.cardToCompare = null;
     this.opened = 0;
     this.debounce = false;
   }
@@ -214,7 +198,6 @@ class Game {
   }
 
   // Finish
-
   stopTimer() {
     clearInterval(this.timerId);
     this.resetTimer();
@@ -230,14 +213,13 @@ class Game {
       .addEventListener("click", this.start.bind(this), false);
   }
 
-  // utils
-
+  // Utils
   randomizer(n) {
-    const arr = new Array(n).fill(true).map((item, i) => ++i);
-
-    return [...arr, ...arr].sort((a, b) => Math.random() - 0.5);
+    const arr = new Array(n).fill(true).map((_, i) => i + 1);
+    return [...arr, ...arr].sort(() => Math.random() - 0.5);
   }
 }
 
 new Game().start();
+
 
